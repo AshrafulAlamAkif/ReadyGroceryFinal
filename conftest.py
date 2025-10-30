@@ -1,8 +1,18 @@
+# ---------- ✅ common setup/teardown থাকবে ----------
 import pytest
 from selenium import webdriver
-# from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
+
+'''
+# ---------- BASE URL ----------
+base_url = "https://uat-readygrocery.razinsoft.com/admin/login"
+@pytest.fixture(scope="session")
+def base_url():
+    """Return base URL for all tests"""
+    return base_url
+'''
+                    #or
 
 # ✅ Base URL Fixture
 @pytest.fixture(scope="session")
