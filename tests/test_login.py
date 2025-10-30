@@ -1,6 +1,5 @@
 # File: tests/test_login.py
 import time
-import pytest
 from selenium.webdriver.common.by import By
 
 # ---------- Setup ----------

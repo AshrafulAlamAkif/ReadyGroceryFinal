@@ -1,3 +1,4 @@
+#tests/test_add_multi_product.py
 import time
 import random
 import pytest
@@ -17,7 +18,7 @@ def test_add_multiple_products(setup, base_url):
     login_button = driver.find_element(By.CSS_SELECTOR, "button.loginButton")
     driver.execute_script("arguments[0].scrollIntoView(true);", login_button)
     driver.execute_script("arguments[0].click();", login_button)
-    time.sleep(10)  # wait for login to complete
+    time.sleep(2)  # wait for login to complete
     print("✅ Logged in successfully to admin panel")
 
     # ---------- STEP 2: Product List ----------
@@ -55,7 +56,7 @@ def test_add_multiple_products(setup, base_url):
                 return
             product_menu = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, "//span[normalize-space()='Product Management']")))
             driver.execute_script("arguments[0].scrollIntoView(true);", product_menu)
-            time.sleep(1)
+            # time.sleep(1)
             driver.execute_script("arguments[0].click();", product_menu)
             time.sleep(1)
             print("📦 Clicked Product Management menu")
@@ -73,18 +74,22 @@ def test_add_multiple_products(setup, base_url):
             driver.execute_script("arguments[0].click();", add_product_btn)
             print("🧾 Opened Add Product page")
 
-            # Fill form
+            # ---------- STEP 3: Fill Form ----------
             driver.find_element(By.ID, "product_name").send_keys(product["name"])
             driver.find_element(By.NAME, "short_description").send_keys(product["desc"])
-
+            print(f"✍️ Filling info for {product['name']}")
+            
+            # ---------- Description (Rich Text) ----------
             editor = WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.XPATH, "//div[@id='editor']//div[contains(@class,'ql-editor')]"))
             )
             description_text = f"<p><b>{product['name']}</b> - {product['desc']}</p>"
             driver.execute_script("arguments[0].innerHTML = arguments[1];", editor, description_text)
-            print("📝 Product name and descriptions filled")
+            print("📝 Description field filled successfully!")
+            
             # ---------- Unit ----------
             driver.find_element(By.ID, "unit").send_keys(product["unit"])
+            
             # ---------- SKU Generate ----------
             try:
                 generate_code = WebDriverWait(driver, 10).until(
@@ -97,7 +102,7 @@ def test_add_multiple_products(setup, base_url):
             except:
                 print("⚠️ Could not generate SKU")
 
-            # Price fields
+            # ---------- Prices fields----------
             for field_id, value in [
                 ("buy_price", product["buy_price"]),
                 ("price", product["price"]),
@@ -108,8 +113,7 @@ def test_add_multiple_products(setup, base_url):
                 f = driver.find_element(By.ID, field_id)
                 f.clear()
                 f.send_keys(value)
-
-            print("💰 Pricing & quantity filled")
+            print("💰 Filled pricing & quantity details successfully!")
             
             # ---------- Category ----------
             try:
@@ -119,9 +123,11 @@ def test_add_multiple_products(setup, base_url):
             except:
                 print("⚠️ Category not found, skipping...")
 
-            # Upload thumbnail
+            # ---------- Upload Thumbnail ----------
             thumb_label = driver.find_element(By.CSS_SELECTOR, "label.mainThumbnail")
             driver.execute_script("arguments[0].click();", thumb_label)
+            print("🖼️ Opened image upload modal")
+            
             driver.switch_to.frame("lfmIframe")
 
             image_to_select = WebDriverWait(driver, 10).until(
@@ -133,11 +139,13 @@ def test_add_multiple_products(setup, base_url):
             confirm_button.click()
             driver.switch_to.default_content()
 
-            # Submit form
+            # ---------- Submit from----------
             submit_btn = driver.find_element(By.XPATH, "//button[contains(.,'Submit') or contains(.,'Save')]")
             driver.execute_script("arguments[0].click();", submit_btn)
-
             time.sleep(1)
+            print(f"🚀 Submitted product '{product['name']}'")
+            
+            # ---------- Validation ----------
             assert "products" in driver.current_url, f"❌ Product '{product['name']}' failed to add"
             print(f"🎉 '{product['name']}' added successfully!\n")
 
