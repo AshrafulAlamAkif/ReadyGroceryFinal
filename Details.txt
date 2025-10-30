@@ -1,0 +1,30 @@
+🧠 ব্যাখ্যা:
+1. pytest.fixture দিয়ে setup function তৈরি করা হয়েছে (যেমন TestNG @BeforeMethod)
+2. Test function এর নাম test_ দিয়ে শুরু করতে হবে।
+3. শেষে assert ব্যবহার করা হয়েছে, যেন test pass/fail নির্ধারণ হয়।
+
+🧩 Step 1: pytest আর pytest-html install করো
+Command: pip install pytest pytest-html
+
+🧩 Step 2: Script টাকে pytest compatible করো
+স্ক্রিপ্টের শুরুতে একটু modify করতে হবে —
+pytest কাজ করে function-based test এর উপর (মানে test_ দিয়ে শুরু হওয়া function)।
+তাই test_add_multi_product.py
+add_multi_product.py
+
+⚙️ Step 3: Test Run করা
+Command: pytest -v -s (একাধিক test লিখলে সব একসাথে run হবে)
+(fline name will be Example: test_add_multi_product.py)
+-v → verbose mode
+-s → print output দেখাবে
+Browser open হবে, login করবে, close হবে,
+আর terminal এ দেখাবে ✅ PASSED বা ❌ FAILED.
+
+✅ Best Practice: pytest tests/test_add_multi_product.py -v -s
+(মানে শুধু “PASSED” বা “FAILED” না, বরং কোন test function চলছে — তার নামও দেখাবে।)
+
+
+
+📊 Step 4: HTML Report Generate করা
+Command All File: pytest --html=reports/report.html --self-contained-html
+Command single File: pytest add_multi_product.py --html=report.html --self-contained-html
