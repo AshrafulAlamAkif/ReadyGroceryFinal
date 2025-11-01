@@ -1,10 +1,7 @@
 #test_add_vendor.py
-from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
 import time
 import os
 
@@ -19,7 +16,7 @@ def test_add_vendor(setup, base_url):
     wait = WebDriverWait(driver, 10)  # Increased wait for slow load
 
     # ---------- STEP 1: Open login page ----------
-    driver.get("base_url")
+    driver.get(base_url)
     print("Opened login page")
     time.sleep(1)
 
@@ -62,10 +59,12 @@ def test_add_vendor(setup, base_url):
     timestamp = int(time.time())
     unique_email = f"vendor{timestamp}@gmail.com"
     unique_shop = f"Shop{timestamp}"
+    unique_phone = f"017{str(timestamp)[-8:]}"  # unique phone number (e.g. 017 + last 8 digits of timestamp)
 
     driver.find_element(By.ID, "first_name").send_keys("Akif")
     driver.find_element(By.ID, "last_name").send_keys("Alam")
-    driver.find_element(By.ID, "phone").send_keys("01700000000")
+    # driver.find_element(By.ID, "phone").send_keys("01700000000")  // replaced with unique phone
+    driver.find_element(By.ID, "phone").send_keys(unique_phone)
 
     gender_dropdown = Select(driver.find_element(By.ID, "gender"))
     gender_dropdown.select_by_visible_text("Male")
@@ -77,17 +76,110 @@ def test_add_vendor(setup, base_url):
     driver.find_element(By.ID, "shop_name").send_keys(unique_shop)
     driver.find_element(By.ID, "address").send_keys("Dhaka, Bangladesh")
     driver.find_element(By.ID, "description").send_keys("This is a test vendor created by automation.")
-    print("📝 Filled vendor details")
+    print("📝 Filled vendor details successfully")
 
     # ---------- STEP 4.1: Upload Profile Photo ----------
-    image_path = r"C:\Users\Ashraful Alam Akif\ReadyGrocery\image.png"  # Path to your image
-    if os.path.exists(image_path):
-        file_input = driver.find_element(By.ID, "thumbnail")
-        file_input.send_keys(image_path)
-        print("✅ Profile photo uploaded successfully")
-        time.sleep(1)  # wait for preview update
-    else:
-        print("❌ Profile photo not found at:", image_path)
+    image_path = os.path.join(os.getcwd(),"image.png")  # image.png ফাইলটা project-এর root বা tests/ ফোল্ডারে রাখো
+    # ---------- STEP 4.2: Handle Crop Modal ----------
+    try:
+        # If image exists, upload it first to trigger the crop modal
+        if os.path.exists(image_path):
+            file_input = driver.find_element(By.ID, "thumbnail")
+            file_input.send_keys(image_path)
+            print(f"✅ Profile photo uploaded successfully: {image_path}")
+            time.sleep(1)
+        else:
+            print(f"❌ Profile photo not found at: {image_path}")
+
+        # Wait for the crop modal to appear
+        crop_modal = wait.until(EC.visibility_of_element_located((By.ID, "cropperModal")))
+        print("🖼️ Crop modal appeared successfully!")
+
+        # Wait until the "Crop & Save" button becomes clickable
+        crop_save_btn = wait.until(EC.element_to_be_clickable((By.ID, "cropAndSave")))
+
+        # Scroll into view and click via JS (safer)
+        driver.execute_script("arguments[0].scrollIntoView(true);", crop_save_btn)
+        time.sleep(0.5)
+        
+        crop_save_btn.click()
+        print("✅ Clicked 'Crop & Save' button successfully!")
+
+        # Wait until modal disappears (image cropped)
+        wait.until(EC.invisibility_of_element_located((By.ID, "cropperModal")))
+        print("🧩 Crop modal closed and image cropped successfully!")
+    except Exception as e:
+        print("⚠️ Crop modal or 'Crop & Save' button not found:", e)
+        
+    # ---------- Upload Shop Logo ----------
+    try:
+        shop_logo_label  = driver.find_element(By.XPATH, "//input[@name='shop_logo']/preceding-sibling::label")
+        driver.execute_script("arguments[0].click();", shop_logo_label )
+        print("🖼️ Opened Shop Logo upload modal")
+        
+        # ✅ Wait until the iframe is visible
+        iframe = wait.until(EC.presence_of_element_located((By.ID, "lfmIframe")))
+        # iframe = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "iframe#lfmIframe")))    # alternative
+        # driver.switch_to.frame("lfmIframe")   # or use the above located iframe
+        driver.switch_to.frame(iframe)
+        print("🔄 Switched to image frame")
+        
+        # Select the desired image inside iframe (data-id='3' as example)
+        image_to_select = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "div.gridCart[data-id='3']"))
+        )
+        driver.execute_script("arguments[0].click();", image_to_select)
+        print("🖼️ Selected Shop Logo inside iframe")
+        
+        time.sleep(1)
+        
+        # Click 'Use' / Confirm button
+        confirm_button = driver.find_element(By.XPATH, "//nav[@id='actions']//a[@data-action='use']")
+        driver.execute_script("arguments[0].scrollIntoView(true);", confirm_button)
+        time.sleep(0.5)
+        driver.execute_script("arguments[0].click();", confirm_button)
+        # confirm_button.click()
+        print("✅ Clicked Confirm button successfully")
+        
+        # ✅ Switch back to main page
+        driver.switch_to.default_content()
+        print("↩️ Switched back to main content successfully")
+        
+    except Exception as e:
+        print("⚠️ Thumbnail upload failed:", e)
+        
+    # ---------- Upload Shop Banner ----------
+    try:
+        # 1️⃣ Open Shop Banner modal
+        shop_banner_label = driver.find_element(By.XPATH, "//input[@name='shop_banner']/preceding-sibling::label")
+        driver.execute_script("arguments[0].scrollIntoView(true);", shop_banner_label)
+        time.sleep(0.5)
+        driver.execute_script("arguments[0].click();", shop_banner_label)
+        print("🖼️ Opened Shop Banner upload modal")
+        
+        # 2️⃣ Wait for iframe and switch
+        driver.switch_to.frame("lfmIframe")
+        print("🔄 Switched to banner image frame")
+        
+        # 3️⃣ Select desired banner image (data-id='5' as example)
+        banner_image = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div.gridCart[data-id='5']")))
+        driver.execute_script("arguments[0].click();", banner_image)
+        print("🖼️ Selected Shop Banner inside")
+        
+        # 4️⃣ Confirm selection
+        confirm_btn = driver.find_element(By.XPATH, "//nav[@id='actions']//a[@data-action='use']")
+        driver.execute_script("arguments[0].scrollIntoView(true);", confirm_btn)
+        time.sleep(0.5)
+        driver.execute_script("arguments[0].click();", confirm_btn)
+        print("✅ Clicked Confirm button successfully")
+        
+        # 5️⃣ Switch back to main content
+        driver.switch_to.default_content()
+        print("↩️ Switched back to main content successfully")
+        
+    except Exception as e:
+        print("⚠️ Shop Banner upload failed:", e)
+
 
     # ---------- STEP 5: Click Submit safely ----------
     try:
@@ -107,4 +199,3 @@ def test_add_vendor(setup, base_url):
     
     assert "vendor" in driver.page_source.lower(), "Vendor creation verification failed"
     print("✅ Vendor created successfully and verified!")
-    driver.quit()
